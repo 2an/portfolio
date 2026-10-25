@@ -1,7 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { GlitchText } from "@/components/glitch-text";
+import { GridFloor } from "@/components/grid-floor";
 import { Reveal } from "@/components/reveal";
+import { Scanlines } from "@/components/scanlines";
 import { Section } from "@/components/section";
 
 const fadeUp = {
@@ -37,13 +40,14 @@ const PROJECTS = [
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
+      <Scanlines />
       <header className="flex items-center justify-between px-6 py-6 sm:px-10">
-        <a href="/" className="font-mono text-sm text-neutral-400 transition-colors hover:text-neutral-100">
-          tn.
+        <a href="/" className="font-mono text-sm text-neutral-400 transition-colors hover:text-neon-cyan">
+          tn<span className="text-neon-magenta">.</span>
         </a>
         <nav className="flex gap-5 text-sm text-neutral-500 sm:gap-7">
           {NAV.map((item) => (
-            <a key={item.href} href={item.href} className="transition-colors hover:text-neutral-100">
+            <a key={item.href} href={item.href} className="transition-colors hover:text-neon-cyan">
               {item.label}
             </a>
           ))}
@@ -52,13 +56,14 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="flex flex-col items-center justify-center gap-6 px-6 py-28 text-center sm:py-40">
+        <section className="relative flex flex-col items-center justify-center gap-6 overflow-hidden px-6 py-28 text-center sm:py-40">
+          <GridFloor />
           <motion.p
             custom={0}
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="text-xs uppercase tracking-[0.3em] text-neutral-500"
+            className="relative z-10 text-xs uppercase tracking-[0.3em] text-neon-cyan/80 [text-shadow:0_0_12px_rgba(0,240,255,0.35)]"
           >
             Portfolio
           </motion.p>
@@ -67,16 +72,16 @@ export default function Home() {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="text-5xl font-semibold tracking-tight text-neutral-50 sm:text-7xl"
+            className="relative z-10 text-5xl font-semibold tracking-tight text-neutral-50 sm:text-7xl"
           >
-            Tuan Ngo
+            <GlitchText text="Tuan Ngo" />
           </motion.h1>
           <motion.p
             custom={2}
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="max-w-md text-lg text-neutral-400"
+            className="relative z-10 max-w-md text-lg text-neutral-400"
           >
             Software developer — building a website that is about me, and about
             what the web can do.
@@ -112,7 +117,7 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-2">
             {PROJECTS.map((item, i) => (
               <Reveal key={i} delay={(i % 2) * 0.08}>
-                <article className="group h-full rounded-lg border border-neutral-800/80 p-6 transition-colors hover:border-neutral-600">
+                <article className="group h-full rounded-lg border border-neutral-800/80 p-6 transition-colors hover:border-neon-cyan/60">
                   <h3 className="font-medium text-neutral-100">{item.title}</h3>
                   <p className="mt-2 text-sm italic leading-relaxed text-neutral-600">{item.blurb}</p>
                 </article>
@@ -129,7 +134,7 @@ export default function Home() {
             </p>
             <a
               href="mailto:hello@example.com"
-              className="mt-6 inline-flex items-center rounded-full border border-neutral-700 px-5 py-2.5 font-mono text-sm text-neutral-200 transition-colors hover:border-neutral-400 hover:text-white"
+              className="mt-6 inline-flex items-center rounded-full border border-neon-cyan/40 px-5 py-2.5 font-mono text-sm text-neon-cyan transition-colors hover:border-neon-cyan hover:bg-neon-cyan/10"
             >
               hello@example.com
             </a>
@@ -141,6 +146,7 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-8 font-mono text-xs text-neutral-600">
           <span>© 2026 Tuan Ngo</span>
           <span>Next.js · Framer Motion</span>
+          <span className="text-neon-magenta/60">v0.1</span>
         </div>
       </footer>
     </div>
