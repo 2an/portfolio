@@ -1,9 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { EASE_OUT } from "@/lib/easing";
 
-/** Fades content up once when it scrolls into view. */
+/** Fades content up once when it scrolls into view.
+    Reduced motion: fade only, no travel. */
 export function Reveal({
   children,
   delay = 0,
@@ -13,13 +15,14 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
+  const reduce = useReducedMotion();
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }}
+      whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.7, delay, ease: EASE_OUT }}
     >
       {children}
     </motion.div>

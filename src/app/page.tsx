@@ -1,152 +1,502 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { GlitchText } from "@/components/glitch-text";
+import { useEffect, useRef, useState } from "react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import { EASE_OUT } from "@/lib/easing";
+import { NAV } from "@/lib/site";
+import { FilmGrain } from "@/components/film-grain";
+import { Letterbox, MiniNav, Progress } from "@/components/chrome";
 import { GridFloor } from "@/components/grid-floor";
-import { Reveal } from "@/components/reveal";
+import { GlitchText } from "@/components/glitch-text";
 import { Scanlines } from "@/components/scanlines";
-import { Section } from "@/components/section";
+import { Scene } from "@/components/scene";
+import { Reveal } from "@/components/reveal";
+import { Timecode } from "@/components/timecode";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
-  }),
-};
+const pad2 = (n: number) => String(n).padStart(2, "0");
 
-const NAV = [
-  { href: "#about", label: "About" },
-  { href: "#experience", label: "Experience" },
-  { href: "#projects", label: "Projects" },
-  { href: "#contact", label: "Contact" },
+/* Drafted from ~/Projects — swap in real copy (email, years, links) before shipping. */
+
+const SKILLS = [
+  {
+    label: "Front",
+    title: "Frontend & Interface",
+    items: [
+      "TypeScript",
+      "Angular (SSR)",
+      "React / Next.js",
+      "Three.js / WebGL",
+      "Tailwind CSS",
+      "Progressive Web Apps",
+    ],
+  },
+  {
+    label: "Back",
+    title: "Backend & APIs",
+    items: [
+      "Go",
+      "Transactional API design",
+      "Firebase / Firestore",
+      "Tailscale networking",
+      "Docker",
+      "Static + integration tests",
+    ],
+  },
+  {
+    label: "AI",
+    title: "AI & Local Models",
+    items: [
+      "Local LLMs — Ollama, MLX",
+      "Agent systems (Hermes)",
+      "MCP servers",
+      "RAG: indexing + chat",
+      "Python",
+    ],
+  },
+  {
+    label: "Ops",
+    title: "Infrastructure & Ops",
+    items: [
+      "CI/CD — GitHub Actions",
+      "macOS / launchd automation",
+      "Idempotent setup scripts",
+      "Dry-run deploy tooling",
+      "Backups & monitoring",
+    ],
+  },
 ];
 
-// Placeholder content — replace with real details (do not ship as-is).
-const EXPERIENCE = [
-  { period: "20XX — now", role: "Role", company: "Company" },
-  { period: "20XX — 20XX", role: "Role", company: "Company" },
-  { period: "20XX — 20XX", role: "Role", company: "Company" },
+const FILMOGRAPHY = [
+  {
+    title: "DocVault",
+    years: "2025 – 26",
+    blurb:
+      "A private, local-only index + chat over scanned documents. Every model call runs on the owner's own Mac; the phone reaches it over Tailscale.",
+    tags: ["Go", "Angular PWA", "Ollama", "MCP"],
+  },
+  {
+    title: "Tava Loyalty",
+    years: "2025",
+    blurb:
+      "A digital stamp card for a neighborhood cafe — Google Wallet first, a transactional Go API behind it, and deploy tooling that rehearses every move.",
+    tags: ["Go", "Firebase", "Docker", "CI/CD"],
+  },
+  {
+    title: "Tava Cafe",
+    years: "2025",
+    blurb:
+      "SSR Angular website for Tava Cafe — German-first, Three.js visuals, shipped to a static edge.",
+    tags: ["Angular 19", "SSR", "Three.js", "Netlify"],
+  },
+  {
+    title: "ZazenCodes — Season 3",
+    years: "2025",
+    blurb:
+      "Source code for a YouTube coding series — building AI agents, one walkthrough at a time.",
+    tags: ["TypeScript", "AI agents"],
+  },
+  {
+    title: "Mac Studio AI Rig",
+    years: "2024 – 26",
+    blurb:
+      "A self-hosted AI workstation: Ollama + agent stack on a Mac Studio, bootstrapped, scheduled and backed up by idempotent scripts.",
+    tags: ["Bash", "launchd", "Ollama", "MLX"],
+  },
 ];
 
-const PROJECTS = [
-  { title: "Project", blurb: "One line about what it is and why it exists." },
-  { title: "Project", blurb: "One line about what it is and why it exists." },
-  { title: "Project", blurb: "One line about what it is and why it exists." },
-  { title: "Project", blurb: "One line about what it is and why it exists." },
-];
+const HERO_FPS = 24; // source frame rate of /assets/hero.mp4
+const HERO_TAIL_SECONDS = 2; // ping-pong tail length (fallback mode)
 
-export default function Home() {
+function Hero() {
+  const reduce = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasLive, setCanvasLive] = useState(false);
+  const { scrollYProgress } = useScroll({
+    target: wrapRef,
+    offset: ["start start", "end end"],
+  });
+  const y = useTransform(scrollYProgress, [0, 0.4], [0, reduce ? 0 : -120]);
+  const opacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+  const frameOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
+
+  // Scroll-pinned reel. The video plays once as the intro; during that play
+  // we capture every frame (drawImage — zero seeks; the source has a single
+  // keyframe, so random seeks are unreliable). When the play ends, the
+  // canvas takes over and the scroll position scrubs the captured frames:
+  // scrolling the runway plays the film. If the capture comes up short, fall
+  // back to a real-time ping-pong of the tail frames.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || reduce) return;
+    let raf = 0;
+    let off: (() => void) | undefined;
+    let lastCapture = -1;
+    let mode: "capture" | "scrub" | "pong" = "capture";
+    let retries = 0;
+    let slots: (ImageBitmap | undefined)[] = [];
+    const scratch = document.createElement("canvas");
+    const sctx = scratch.getContext("2d");
+
+    const startScrub = () => {
+      mode = "scrub";
+      v.pause();
+      setCanvasLive(true);
+      const c = canvasRef.current;
+      if (!c) return;
+      c.width = v.videoWidth;
+      c.height = v.videoHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      let lastIdx = -1;
+      const draw = (p: number) => {
+        const idx = Math.max(
+          0,
+          Math.min(slots.length - 1, Math.round(p * (slots.length - 1))),
+        );
+        const b = slots[idx];
+        if (b && idx !== lastIdx) {
+          ctx.drawImage(b, 0, 0);
+          lastIdx = idx;
+        }
+      };
+      draw(scrollYProgress.get());
+      off = scrollYProgress.on("change", draw);
+    };
+
+    const startPong = () => {
+      mode = "pong";
+      v.pause();
+      setCanvasLive(true);
+      const c = canvasRef.current;
+      if (!c) return;
+      c.width = v.videoWidth;
+      c.height = v.videoHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      const tail = slots
+        .slice(-Math.round(HERO_TAIL_SECONDS * HERO_FPS))
+        .filter(Boolean) as ImageBitmap[];
+      if (!tail.length) return;
+      let i = tail.length - 1;
+      let dir = -1;
+      let last = performance.now();
+      const frameMs = 1000 / HERO_FPS;
+      const step = (now: number) => {
+        ctx.drawImage(tail[i], 0, 0);
+        if (now - last >= frameMs) {
+          last += frameMs;
+          i += dir;
+          if (i >= tail.length) {
+            i = tail.length - 1;
+            dir = -1;
+          } else if (i < 0) {
+            i = 0;
+            dir = 1;
+          }
+        }
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+
+    const tick = () => {
+      if (mode !== "capture") return;
+      if (v.duration && !slots.length) {
+        slots = new Array(Math.max(1, Math.round(v.duration * HERO_FPS)));
+      }
+      if (sctx && v.playbackRate > 0 && v.currentTime > 0) {
+        // Capture window: the one-shot play crosses each frame once — grab
+        // every frame as it happens (the only reliable decode path here).
+        const idx = Math.min(
+          slots.length - 1,
+          Math.floor(v.currentTime * HERO_FPS),
+        );
+        while (lastCapture < idx) {
+          lastCapture += 1;
+          const n = lastCapture;
+          scratch.width = v.videoWidth;
+          scratch.height = v.videoHeight;
+          sctx.drawImage(v, 0, 0);
+          createImageBitmap(scratch)
+            .then((b) => (slots[n] = b))
+            .catch(() => {});
+        }
+      }
+      if (v.ended) {
+        const got = slots.filter(Boolean).length;
+        if (got >= slots.length * 0.85) {
+          startScrub();
+        } else if (got >= slots.length * 0.5 || retries >= 2) {
+          startPong();
+        } else {
+          retries += 1;
+          v.currentTime = 0;
+          void v.play().catch(() => {});
+        }
+      }
+      if (mode === "capture") raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      off?.();
+      slots.forEach((b) => b?.close());
+    };
+  }, [reduce, scrollYProgress]);
+
   return (
-    <div className="flex min-h-full flex-col">
-      <Scanlines />
-      <header className="flex items-center justify-between px-6 py-6 sm:px-10">
-        <a href="/" className="font-mono text-sm text-neutral-400 transition-colors hover:text-neon-cyan">
-          tn<span className="text-neon-magenta">.</span>
+    <div ref={wrapRef} id="top" className="relative h-[250vh]">
+      <section className="sticky top-0 flex h-svh min-h-[640px] flex-col overflow-hidden">
+        <div className="hero-sky" aria-hidden />
+        {/* Reel — the video plays once as the intro, then the canvas
+            (scroll-scrubbed frames) keeps the pinned viewport alive.
+            Gradient sky stays as the loading / reduced-motion fallback. */}
+        {!reduce && (
+          <>
+            <video
+              ref={videoRef}
+              className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+              src="/assets/hero.mp4"
+              autoPlay
+              muted
+              playsInline
+              preload="metadata"
+              aria-hidden
+            />
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 h-full w-full object-cover ${
+                canvasLive ? "opacity-100" : "opacity-0"
+              }`}
+              aria-hidden
+            />
+          </>
+        )}
+      <div className="absolute inset-0 bg-black/10" aria-hidden />
+      <div className="hero-veil" aria-hidden />
+      <GridFloor />
+      <div className="hero-vignette" aria-hidden />
+
+      {/* Title-frame nav — fades out as the film starts */}
+      <motion.nav
+        style={{ opacity: frameOpacity }}
+        className="relative z-10 flex items-center justify-between px-6 pt-[calc(9vh+1.25rem)] sm:px-10"
+      >
+        <a href="#top" className="font-display text-lg text-ink">
+          tn<span className="text-accent">.</span>
         </a>
-        <nav className="flex gap-5 text-sm text-neutral-500 sm:gap-7">
+        <div className="flex gap-5 font-mono text-[10px] uppercase tracking-[0.25em] text-ink-muted sm:gap-7">
           {NAV.map((item) => (
-            <a key={item.href} href={item.href} className="transition-colors hover:text-neon-cyan">
+            <a
+              key={item.href}
+              href={item.href}
+              className="transition-colors duration-150 hovers:text-accent"
+            >
               {item.label}
             </a>
           ))}
-        </nav>
-      </header>
+        </div>
+      </motion.nav>
+
+      {/* Title */}
+      <motion.div
+        style={{ y, opacity }}
+        className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center"
+      >
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, delay: 0.15, ease: EASE_OUT }}
+          className="font-mono text-[10px] uppercase tracking-[0.4em] text-accent/90"
+        >
+          A portfolio in one reel
+        </motion.p>
+        <div className="line-mask mt-6">
+          <motion.h1
+            initial={{ y: reduce ? "0%" : "112%" }}
+            animate={{ y: "0%" }}
+            transition={{ duration: 1.2, delay: 0.3, ease: EASE_OUT }}
+            className="font-cyber text-[clamp(3rem,11vw,8rem)] leading-none text-ink"
+          >
+            <GlitchText text="TUAN NGO" />
+          </motion.h1>
+        </div>
+        <div className="line-mask mt-5">
+          <motion.p
+            initial={{ y: reduce ? "0%" : "112%" }}
+            animate={{ y: "0%" }}
+            transition={{ duration: 1.1, delay: 0.45, ease: EASE_OUT }}
+            className="text-lg text-ink/85 [text-shadow:0_1px_18px_rgba(0,0,0,0.5)] sm:text-xl"
+          >
+            Full-stack developer &amp; local-AI craftsman
+          </motion.p>
+        </div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.95 }}
+          className="mt-10 font-mono text-[10px] uppercase tracking-[0.35em] text-ink-muted/70"
+        >
+          2.39:1 · Teal &amp; Orange · Reel 01 · 2026
+        </motion.p>
+      </motion.div>
+
+      {/* Scroll cue */}
+      <motion.div
+        style={{ opacity: frameOpacity }}
+        className="relative z-10 flex flex-col items-center gap-3 pb-[calc(9vh+1.25rem)]"
+      >
+        <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-ink-muted/80">
+          Scroll to begin
+        </span>
+        <span className="scroll-cue" aria-hidden />
+      </motion.div>
+      </section>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <div className="relative min-h-full">
+      <FilmGrain />
+      <Scanlines />
+      <Letterbox />
+      <Progress />
+      <MiniNav />
+      <Timecode />
 
       <main className="flex-1">
-        {/* Hero */}
-        <section className="relative flex flex-col items-center justify-center gap-6 overflow-hidden px-6 py-28 text-center sm:py-40">
-          <GridFloor />
-          <motion.p
-            custom={0}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="relative z-10 text-xs uppercase tracking-[0.3em] text-neon-cyan/80 [text-shadow:0_0_12px_rgba(0,240,255,0.35)]"
-          >
-            Portfolio
-          </motion.p>
-          <motion.h1
-            custom={1}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="relative z-10 text-5xl font-semibold tracking-tight text-neutral-50 sm:text-7xl"
-          >
-            <GlitchText text="Tuan Ngo" />
-          </motion.h1>
-          <motion.p
-            custom={2}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="relative z-10 max-w-md text-lg text-neutral-400"
-          >
-            Software developer — building a website that is about me, and about
-            what the web can do.
-          </motion.p>
-        </section>
+        <Hero />
 
-        <Section id="about" eyebrow="About" title="Who I am">
-          <Reveal delay={0.1}>
-            <p className="max-w-xl italic leading-relaxed text-neutral-600">
-              A few sentences about who I am, what I build, and what I am
-              looking for. Placeholder — replace with your own words.
+        <Scene id="about" number="01" eyebrow="About" title="Who I Am">
+          <Reveal>
+            <p className="font-display text-3xl leading-snug text-ink sm:text-4xl">
+              Every build is a production.
             </p>
           </Reveal>
-        </Section>
+          <Reveal delay={0.1}>
+            <p className="mt-6 max-w-xl leading-relaxed text-ink-muted">
+              I&apos;m a full-stack developer who writes the whole film —
+              transactional Go backends, Angular and React frontends, and AI
+              that stays on your own hardware. Local-first isn&apos;t a slogan
+              here; it&apos;s the architecture.
+            </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <p className="mt-4 max-w-xl leading-relaxed text-ink-muted">
+              The through-line is the same in every project: privacy by design,
+              clean architecture, and software that behaves on the first try.
+              If it can run on a Mac in a kitchen, it probably does.
+            </p>
+          </Reveal>
+        </Scene>
 
-        <Section id="experience" eyebrow="CV" title="Experience">
-          <div>
-            {EXPERIENCE.map((item, i) => (
-              <Reveal key={i} delay={i * 0.05}>
-                <div className="grid grid-cols-[7rem_1fr] gap-4 border-b border-neutral-800/60 py-5 sm:grid-cols-[10rem_1fr]">
-                  <span className="pt-1 font-mono text-xs text-neutral-500">{item.period}</span>
-                  <div>
-                    <p className="italic text-neutral-400">{item.role}</p>
-                    <p className="mt-0.5 text-sm italic text-neutral-600">{item.company}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="projects" eyebrow="Work" title="Projects">
+        <Scene
+          id="skills"
+          number="02"
+          eyebrow="Capabilities"
+          title="The Toolkit"
+          wide
+        >
           <div className="grid gap-4 sm:grid-cols-2">
-            {PROJECTS.map((item, i) => (
-              <Reveal key={i} delay={(i % 2) * 0.08}>
-                <article className="group h-full rounded-lg border border-neutral-800/80 p-6 transition-colors hover:border-neon-cyan/60">
-                  <h3 className="font-medium text-neutral-100">{item.title}</h3>
-                  <p className="mt-2 text-sm italic leading-relaxed text-neutral-600">{item.blurb}</p>
+            {SKILLS.map((group, i) => (
+              <Reveal key={group.title} delay={(i % 2) * 0.08} className="h-full">
+                <article className="h-full border border-hairline bg-white/[0.02] p-7 transition-colors duration-150 hovers:border-accent/40">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent/70">
+                    {group.label}
+                  </p>
+                  <h3 className="mt-3 font-display text-2xl text-ink">
+                    {group.title}
+                  </h3>
+                  <ul className="mt-5 flex flex-col">
+                    {group.items.map((item, j) => (
+                      <li
+                        key={item}
+                        className="flex items-baseline gap-3 border-b border-hairline/60 py-2.5 last:border-0"
+                      >
+                        <span className="font-mono text-[10px] text-ink-muted/50">
+                          {pad2(j + 1)}
+                        </span>
+                        <span className="text-sm text-ink-muted">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </article>
               </Reveal>
             ))}
           </div>
-        </Section>
+        </Scene>
 
-        <Section id="contact" eyebrow="Contact" title="Get in touch">
+        <Scene
+          id="work"
+          number="03"
+          eyebrow="Selected Work"
+          title="Filmography"
+          wide
+        >
+          <div>
+            {FILMOGRAPHY.map((film, i) => (
+              <Reveal key={film.title} delay={(i % 3) * 0.06} className="group">
+                <article className="grid grid-cols-[4rem_1fr] gap-4 border-b border-hairline py-7 sm:grid-cols-[7rem_1fr] sm:gap-8">
+                  <span className="pt-2 font-mono text-xs text-ink-muted/60">
+                    {film.years}
+                  </span>
+                  <div>
+                    <h3 className="font-display text-2xl text-ink transition-colors duration-150 group-hovers:text-accent sm:text-3xl">
+                      {film.title}
+                    </h3>
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-muted">
+                      {film.blurb}
+                    </p>
+                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted/50">
+                      {film.tags.join("  ·  ")}
+                    </p>
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </Scene>
+
+        <Scene
+          id="contact"
+          number="04"
+          eyebrow="Contact"
+          title="Now Showing"
+        >
+          <Reveal>
+            <p className="font-display text-3xl leading-snug text-ink sm:text-4xl">
+              The next scene is unwritten.
+            </p>
+          </Reveal>
           <Reveal delay={0.1}>
-            <p className="max-w-md leading-relaxed text-neutral-400">
-              Placeholder — your email and the places people can find you go
-              here.
+            <p className="mt-5 max-w-md leading-relaxed text-ink-muted">
+              Have a project that needs a full stack and a steady hand — or a
+              cafe that needs a stamp card? Say hello.
             </p>
             <a
               href="mailto:hello@example.com"
-              className="mt-6 inline-flex items-center rounded-full border border-neon-cyan/40 px-5 py-2.5 font-mono text-sm text-neon-cyan transition-colors hover:border-neon-cyan hover:bg-neon-cyan/10"
+              className="mt-8 inline-flex items-center rounded-full border border-accent/40 px-6 py-3 font-mono text-sm text-accent transition-colors duration-150 hovers:border-accent hovers:bg-accent/10"
             >
               hello@example.com
             </a>
           </Reveal>
-        </Section>
+        </Scene>
       </main>
 
-      <footer className="border-t border-neutral-800/80">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-8 font-mono text-xs text-neutral-600">
+      <footer className="relative border-t border-hairline">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-8 font-mono text-[10px] uppercase tracking-[0.25em] text-ink-muted/60 sm:px-10">
           <span>© 2026 Tuan Ngo</span>
-          <span>Next.js · Framer Motion</span>
-          <span className="text-neon-magenta/60">v0.1</span>
+          <span>Written, shot &amp; cut in one viewport</span>
+          <span className="text-accent/70">Reel 01 · v0.3</span>
         </div>
       </footer>
     </div>
