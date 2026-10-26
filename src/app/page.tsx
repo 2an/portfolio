@@ -17,6 +17,9 @@ import { Scanlines } from "@/components/scanlines";
 import { Scene } from "@/components/scene";
 import { Reveal } from "@/components/reveal";
 import { Timecode } from "@/components/timecode";
+import { BowAnim } from "@/components/bow-anim";
+import { IaidoAnim } from "@/components/iaido-anim";
+import { HobbyPanel } from "@/components/hobby-panel";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -410,8 +413,37 @@ export default function Home() {
         </Scene>
 
         <Scene
-          id="contact"
+          id="hobbies"
           number="04"
+          eyebrow="Off Duty"
+          title="Hobbies"
+          wide
+        >
+          <div className="flex flex-col gap-20">
+            <HobbyPanel
+              index="01"
+              tag="Archery"
+              title="Bow & Parkour"
+              accent="accent"
+              copy="Running the vertical lines of the city, stopping in the air, drawing the bow. 3D parkour and archery — placeholder copy, details coming."
+            >
+              <BowAnim />
+            </HobbyPanel>
+            <HobbyPanel
+              index="02"
+              tag="Iaido"
+              title="One-Handed Sword"
+              accent="flare"
+              copy="Katana in one hand, one breath before the cut. Iaido — placeholder copy, dojo and rank details coming."
+            >
+              <IaidoAnim />
+            </HobbyPanel>
+          </div>
+        </Scene>
+
+        <Scene
+          id="contact"
+          number="05"
           eyebrow="Contact"
           title="Now Showing"
         >
