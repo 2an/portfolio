@@ -225,7 +225,7 @@ function Hero() {
         style={{ opacity: frameOpacity }}
         className="relative z-10 flex items-center justify-between px-6 pt-[calc(9vh+1.25rem)] sm:px-10"
       >
-        <a href="#top" className="font-cyber text-base font-semibold tracking-[0.05em] text-ink">
+        <a href="#top" className="font-cyber text-base tracking-[0.05em] text-ink">
           tn<span className="text-chrome">.</span>
         </a>
         <div className="hidden gap-7 font-mono text-xs uppercase tracking-[0.25em] text-muted sm:flex">
@@ -281,7 +281,7 @@ function Hero() {
               initial={{ y: reduce ? "0%" : "112%" }}
               animate={{ y: "0%" }}
               transition={{ duration: 1.2, delay: 0.3, ease: EASE_OUT }}
-              className="font-cyber text-[clamp(3rem,9vw,8rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-chrome"
+              className="font-cyber text-[clamp(3rem,9vw,8rem)] leading-[1.05] text-chrome"
             >
               <GlitchText text="TUAN NGO" />
             </motion.h1>
@@ -445,7 +445,7 @@ export default function Home() {
           eyebrow="Selected Work"
           title="Selected Work"
           wide
-          titleClassName="font-cyber text-4xl font-semibold uppercase leading-tight tracking-[-0.025em] text-ink sm:text-5xl"
+          titleClassName="font-cyber text-4xl uppercase leading-tight text-ink sm:text-5xl"
         >
           <div>
             {/* One small hazard tick per section — separator, not background */}
@@ -473,7 +473,7 @@ export default function Home() {
                       {FILMOGRAPHY[0].years}
                     </span>
                   </div>
-                  <h3 className="mt-4 font-cyber text-3xl font-semibold tracking-[-0.025em] text-ink sm:text-4xl">
+                  <h3 className="mt-4 font-cyber text-3xl text-ink sm:text-4xl">
                     {FILMOGRAPHY[0].title}
                   </h3>
                   <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
@@ -507,7 +507,7 @@ export default function Home() {
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-cyber text-xl font-semibold tracking-[-0.02em] text-ink transition-colors duration-150 group-hover:text-chrome sm:text-2xl">
+                      <h3 className="font-cyber text-xl text-ink transition-colors duration-150 group-hover:text-chrome sm:text-2xl">
                         {film.title}
                       </h3>
                       <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">

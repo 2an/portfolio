@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Audiowide, Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,9 +18,9 @@ const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
 });
 
-const chakraPetch = Chakra_Petch({
-  variable: "--font-chakra",
-  weight: "600",
+const audiowide = Audiowide({
+  variable: "--font-audiowide",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${chakraPetch.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${audiowide.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

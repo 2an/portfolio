@@ -82,7 +82,7 @@ export function HobbyPanel({
             <span className="mr-2 opacity-60">///</span>
             {tag}
           </p>
-          <h3 className="mt-3 -skew-x-6 font-cyber text-3xl uppercase italic tracking-tight text-ink sm:text-4xl">
+          <h3 className="mt-3 -skew-x-6 font-cyber text-3xl uppercase italic text-ink sm:text-4xl">
             <GlitchText text={title} className="cp-title" />
           </h3>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-muted">{copy}</p>
