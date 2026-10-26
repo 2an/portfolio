@@ -424,7 +424,7 @@ export default function Home() {
               index="01"
               tag="Archery"
               title="Bow & Parkour"
-              accent="accent"
+              accent="chrome"
               copy="Running the vertical lines of the city, stopping in the air, drawing the bow. 3D parkour and archery — placeholder copy, details coming."
             >
               <BowAnim />

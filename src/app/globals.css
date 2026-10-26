@@ -21,6 +21,7 @@
   --color-ink-muted: #8a8f8c;
   --color-accent: #45e5de;
   --color-flare: #e0518f;
+  --color-chrome: #fcee0a;
   --color-warm: #d9a05b;
   --color-cool: #6f9c9b;
   --color-hairline: rgba(236, 230, 218, 0.14);
@@ -297,6 +298,70 @@ body {
   100% { clip-path: inset(25% 0 55% 0); transform: translate(0.03em, -0.015em); }
 }
 
+/* ---------- Cyberpunk 2077 voice (hobbies scene) ---------- */
+
+/* Chamfered plate: TR + BL corners cut (the square corners stay intact
+    for the HUD brackets) */
+.chamfer {
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+/* HUD grid backdrop inside a stage: faint cyan lattice + horizon glow */
+.cp-hud-grid {
+  background-image:
+    radial-gradient(90% 65% at 50% 108%, rgba(252, 238, 10, 0.07), transparent 70%),
+    linear-gradient(to right, rgba(69, 229, 222, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(69, 229, 222, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 28px 28px, 28px 28px;
+}
+
+/* Diagonal hazard band — chrome yellow by default, magenta via modifier */
+.cp-hazard {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-chrome) 0 10px,
+    transparent 10px 22px
+  );
+  opacity: 0.45;
+}
+.cp-hazard--flare {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-flare) 0 10px,
+    transparent 10px 22px
+  );
+}
+
+/* HUD corner bracket — color via currentColor on the span */
+.hud-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid currentColor;
+  pointer-events: none;
+}
+.hud-corner--tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.hud-corner--br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+/* CP77 headline treatment: hard yellow/magenta chromatic fringe at rest
+    (sits on top of .glitch's faint fringe; the burst still slices) */
+.cp-title {
+  text-shadow:
+    0.03em 0 rgba(252, 238, 10, 0.3),
+    -0.03em 0 rgba(224, 81, 143, 0.3),
+    0 2px 34px rgba(0, 0, 0, 0.65);
+}
+
+/* REC dot blink + slow reticle spin (SVG-safe) */
+.cp-blink { animation: cp-blink 1.1s steps(2) infinite; }
+@keyframes cp-blink { to { visibility: hidden; } }
+.cp-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cp-spin 16s linear infinite;
+}
+@keyframes cp-spin { to { transform: rotate(360deg); } }
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -307,7 +372,9 @@ body {
   .glitch.glitching,
   .glitch.glitching::before,
   .glitch.glitching::after,
-  .scroll-cue::after {
+  .scroll-cue::after,
+  .cp-blink,
+  .cp-spin {
     animation: none;
   }
 }

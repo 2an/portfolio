@@ -71,6 +71,20 @@ export function IaidoAnim() {
           strokeLinecap="round"
         />
       </motion.g>
+      {/* Lock-on reticle sweeping around the blade */}
+      {!reduce && (
+        <g className="cp-spin">
+          <circle
+            cx={332}
+            cy={103}
+            r={56}
+            fill="none"
+            stroke="var(--color-flare)"
+            strokeOpacity={0.22}
+            strokeDasharray="3 14"
+          />
+        </g>
+      )}
       {/* Katana in front */}
       <g style={{ filter: "drop-shadow(0 0 6px rgba(224, 81, 143, 0.5))" }}>
         {/* Blade */}
@@ -99,7 +113,7 @@ export function IaidoAnim() {
           y1={70}
           x2={353}
           y2={77}
-          stroke="var(--color-flare)"
+          stroke="var(--color-chrome)"
           strokeWidth={3}
           strokeLinecap="round"
         />
@@ -109,7 +123,7 @@ export function IaidoAnim() {
         <motion.path
           d="M 352 54 L 312 152"
           fill="none"
-          stroke="var(--color-flare)"
+          stroke="var(--color-chrome)"
           strokeWidth={1}
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: [0, 0.9, 0.9, 0] }}

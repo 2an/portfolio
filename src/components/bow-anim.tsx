@@ -62,28 +62,30 @@ export function BowAnim() {
 
   return (
     <svg viewBox="0 0 480 200" className="h-full w-full" aria-hidden>
-      {/* Target — flares when the arrow arrives */}
-      <motion.circle
-        cx={400}
-        cy={100}
-        r={30}
-        fill="none"
-        stroke="var(--color-flare)"
-        strokeDasharray="4 6"
-        animate={{ strokeOpacity: [0.4, 0.4, 0.9, 0.4, 0.4] }}
-        transition={{
-          duration: CYCLE,
-          times: [0, 0.62, 0.78, 0.9, 1],
-          repeat: Infinity,
-        }}
-      />
+      {/* Target — lock-on ring spins slowly, flares when the arrow arrives */}
+      <g className={reduce ? undefined : "cp-spin"}>
+        <motion.circle
+          cx={400}
+          cy={100}
+          r={30}
+          fill="none"
+          stroke="var(--color-chrome)"
+          strokeDasharray="6 8"
+          animate={{ strokeOpacity: [0.35, 0.35, 0.95, 0.35, 0.35] }}
+          transition={{
+            duration: CYCLE,
+            times: [0, 0.62, 0.78, 0.9, 1],
+            repeat: Infinity,
+          }}
+        />
+      </g>
       <circle
         cx={400}
         cy={100}
         r={11}
         fill="none"
         stroke="var(--color-flare)"
-        strokeOpacity={0.5}
+        strokeOpacity={0.55}
       />
       {/* Limb — thumps on release */}
       <motion.path
@@ -144,15 +146,15 @@ function Arrow() {
   return (
     <g>
       <line x1={REST} y1={100} x2={216} y2={100} stroke="var(--color-ink)" strokeWidth={2} />
-      <line x1={216} y1={100} x2={205} y2={93} stroke="var(--color-ink)" strokeWidth={2} />
-      <line x1={216} y1={100} x2={205} y2={107} stroke="var(--color-ink)" strokeWidth={2} />
+      <line x1={216} y1={100} x2={205} y2={93} stroke="var(--color-chrome)" strokeWidth={2} />
+      <line x1={216} y1={100} x2={205} y2={107} stroke="var(--color-chrome)" strokeWidth={2} />
       {/* Fletching */}
       <line
         x1={REST + 6}
         y1={100}
         x2={REST + 13}
         y2={94}
-        stroke="var(--color-flare)"
+        stroke="var(--color-chrome)"
         strokeWidth={2}
       />
       <line
@@ -160,7 +162,7 @@ function Arrow() {
         y1={100}
         x2={REST + 13}
         y2={106}
-        stroke="var(--color-flare)"
+        stroke="var(--color-chrome)"
         strokeWidth={2}
       />
     </g>
