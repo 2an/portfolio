@@ -11,7 +11,6 @@ import { EASE_OUT } from "@/lib/easing";
 import { NAV } from "@/lib/site";
 import { FilmGrain } from "@/components/film-grain";
 import { Letterbox, MiniNav, Progress } from "@/components/chrome";
-import { GridFloor } from "@/components/grid-floor";
 import { GlitchText } from "@/components/glitch-text";
 import { Scanlines } from "@/components/scanlines";
 import { Scene } from "@/components/scene";
@@ -120,6 +119,16 @@ function Hero() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasLive, setCanvasLive] = useState(false);
+  // The pinned reel + frame sequence are a desktop enhancement only.
+  // Mobile gets a static poster and never fetches the 145 frames.
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const { scrollYProgress } = useScroll({
     target: wrapRef,
     offset: ["start start", "end end"],
@@ -130,6 +139,10 @@ function Hero() {
   const canvasScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
   const canvasOpacity = useTransform(scrollYProgress, [0, 0.06], [0, 1]);
   const exitOpacity = useTransform(scrollYProgress, [0.72, 1], [0, 1]);
+  // Pin transforms only make sense on the desktop runway — on mobile the
+  // hero scrolls normally, so hold the identity block in place.
+  const titleY = desktop ? y : 0;
+  const titleOpacity = desktop ? opacity : 1;
 
   // Scroll-pinned reel — no video playback at all. The source mp4 is a
   // single-keyframe H.264 that cannot be seeked, so the film was flattened
@@ -137,7 +150,7 @@ function Hero() {
   // ImageBitmaps; the title screen stays static until the user scrolls,
   // then the canvas scrubs the film.
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !desktop) return;
     let alive = true;
     let raf = 0;
     const slots: (ImageBitmap | undefined)[] = new Array(FRAME_COUNT);
@@ -199,51 +212,28 @@ function Hero() {
       cancelAnimationFrame(raf);
       slots.forEach((b) => b?.close());
     };
-  }, [reduce, scrollYProgress]);
+  }, [reduce, desktop, scrollYProgress]);
 
   return (
-    <div ref={wrapRef} id="top" className="relative h-[250vh]">
-      <section className="sticky top-0 flex h-svh min-h-[640px] flex-col overflow-hidden">
+    <div ref={wrapRef} id="top" className="relative min-h-svh md:h-[250vh]">
+      <section className="sticky top-0 flex min-h-svh flex-col overflow-hidden md:h-svh">
+        {/* Night Signal ground: flat neutral + faint static technical grid */}
         <div className="hero-sky" aria-hidden />
-        {/* Reel — pre-extracted frames, no video playback. Hidden at the
-            top of the runway (title screen); fades in on the first scroll
-            and scrubs with the pin. Gradient sky is the loading /
-            reduced-motion fallback. */}
-        {!reduce && (
-          <motion.canvas
-            ref={canvasRef}
-            style={{ scale: canvasScale, opacity: canvasLive ? canvasOpacity : 0 }}
-            className="absolute inset-0 h-full w-full object-cover"
-            aria-hidden
-          />
-        )}
-      <div className="absolute inset-0 bg-black/10" aria-hidden />
-      <div className="hero-veil" aria-hidden />
-      <GridFloor />
-      <div className="hero-vignette" aria-hidden />
-      {/* Dissolve: the pinned reel fades to the page background over the
-          last stretch of the runway, so the next section arrives on a
-          clean surface instead of a hard cut. */}
-      <motion.div
-        style={{ opacity: exitOpacity }}
-        className="pointer-events-none absolute inset-0 bg-[#050507]"
-        aria-hidden
-      />
 
       {/* Title-frame nav — fades out as the film starts */}
       <motion.nav
         style={{ opacity: frameOpacity }}
         className="relative z-10 flex items-center justify-between px-6 pt-[calc(9vh+1.25rem)] sm:px-10"
       >
-        <a href="#top" className="font-display text-lg text-ink">
-          tn<span className="text-accent">.</span>
+        <a href="#top" className="font-cyber text-base font-semibold tracking-[0.05em] text-ink">
+          tn<span className="text-chrome">.</span>
         </a>
-        <div className="flex gap-5 font-mono text-[10px] uppercase tracking-[0.25em] text-ink-muted sm:gap-7">
+        <div className="hidden gap-7 font-mono text-xs uppercase tracking-[0.25em] text-muted sm:flex">
           {NAV.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="transition-colors duration-150 hovers:text-accent"
+              className="transition-colors duration-140 hovers:text-accent"
             >
               {item.label}
             </a>
@@ -251,55 +241,120 @@ function Hero() {
         </div>
       </motion.nav>
 
-      {/* Title */}
-      <motion.div
-        style={{ y, opacity }}
-        className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center"
+      {/* Technical rail — a real section index, not invented telemetry */}
+      <motion.nav
+        style={{ opacity: frameOpacity }}
+        aria-label="Section index"
+        className="absolute left-6 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-2.5 xl:flex"
       >
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.15, ease: EASE_OUT }}
-          className="font-mono text-[10px] uppercase tracking-[0.4em] text-accent/90"
-        >
-          A portfolio in one reel
-        </motion.p>
-        <div className="line-mask mt-6">
-          <motion.h1
-            initial={{ y: reduce ? "0%" : "112%" }}
-            animate={{ y: "0%" }}
-            transition={{ duration: 1.2, delay: 0.3, ease: EASE_OUT }}
-            className="font-cyber text-[clamp(3rem,11vw,8rem)] leading-none text-ink"
+        <span className="mb-1 block h-8 w-px bg-line/40" aria-hidden />
+        {NAV.map((item, i) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="font-mono text-xs tracking-[0.1em] text-muted transition-colors duration-140 hover:text-accent"
           >
-            <GlitchText text="TUAN NGO" />
-          </motion.h1>
-        </div>
-        <div className="line-mask mt-5">
+            <span className="text-chrome/70">{pad2(i + 1)}</span> {item.label}
+          </a>
+        ))}
+      </motion.nav>
+
+      {/* 7/5 identity split: yellow name + CTAs | reel in one cropped frame */}
+      <div className="relative z-10 mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-1 items-center gap-8 px-6 py-8 sm:px-10 md:grid-cols-12 md:gap-10">
+        <motion.div
+          style={{ y: titleY, opacity: titleOpacity }}
+          className="flex flex-col items-start text-left md:col-span-7"
+        >
           <motion.p
-            initial={{ y: reduce ? "0%" : "112%" }}
-            animate={{ y: "0%" }}
-            transition={{ duration: 1.1, delay: 0.45, ease: EASE_OUT }}
-            className="text-lg text-ink/85 [text-shadow:0_1px_18px_rgba(0,0,0,0.5)] sm:text-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.2, delay: 0.15, ease: EASE_OUT }}
+            className="font-mono text-xs font-medium uppercase tracking-[0.1em] text-accent"
           >
-            Full-stack developer &amp; local-AI craftsman
+            Full-Stack / Local AI
           </motion.p>
+          <div className="line-mask mt-5">
+            <motion.h1
+              initial={{ y: reduce ? "0%" : "112%" }}
+              animate={{ y: "0%" }}
+              transition={{ duration: 1.2, delay: 0.3, ease: EASE_OUT }}
+              className="font-cyber text-[clamp(3rem,9vw,8rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-chrome"
+            >
+              <GlitchText text="TUAN NGO" />
+            </motion.h1>
+          </div>
+          <div className="line-mask mt-4">
+            <motion.p
+              initial={{ y: reduce ? "0%" : "112%" }}
+              animate={{ y: "0%" }}
+              transition={{ duration: 1.1, delay: 0.45, ease: EASE_OUT }}
+              className="max-w-[34ch] text-lg leading-relaxed text-ink sm:text-xl"
+            >
+              Full-stack developer &amp; local-AI craftsman
+            </motion.p>
+          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.8 }}
+            className="mt-8 flex flex-wrap gap-3"
+          >
+            <a
+              href="#work"
+              className="inline-flex h-12 items-center bg-chrome px-6 font-mono text-xs font-medium uppercase tracking-[0.1em] text-neutral transition-colors duration-140 hover:bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[3px]"
+            >
+              View Work
+            </a>
+            <a
+              href="#contact"
+              className="inline-flex h-12 items-center border border-accent/50 bg-surface px-6 font-mono text-xs font-medium uppercase tracking-[0.1em] text-accent transition-colors duration-140 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[3px]"
+            >
+              Contact
+            </a>
+          </motion.div>
+        </motion.div>
+
+        {/* The reel — one cropped frame. Desktop scrubs the pre-extracted
+            frames (poster = frame 001 so the scrub start is seamless);
+            mobile keeps the static poster and never fetches the sequence. */}
+        <div className="flex flex-col items-center md:col-span-5 md:items-end">
+          <div className="chamfer-tr relative aspect-square w-full max-w-[280px] overflow-hidden border border-hairline bg-neutral sm:max-w-[360px] md:max-w-[480px]">
+            <img
+              src="/assets/hero-frames/f001.jpg"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            {!reduce && (
+              <motion.canvas
+                ref={canvasRef}
+                style={{ scale: canvasScale, opacity: canvasLive ? canvasOpacity : 0 }}
+                className="absolute inset-0 hidden h-full w-full object-cover md:block"
+                aria-hidden
+              />
+            )}
+            <div className="hero-vignette" aria-hidden />
+          </div>
+          <p className="mt-3 font-mono text-xs tracking-[0.15em] text-muted md:text-right">
+            REEL 01 — 2026
+          </p>
         </div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.95 }}
-          className="mt-10 font-mono text-[10px] uppercase tracking-[0.35em] text-ink-muted/70"
-        >
-          2.39:1 · Teal &amp; Orange · Reel 01 · 2026
-        </motion.p>
-      </motion.div>
+      </div>
+
+      {/* Dissolve: the pinned reel fades to the page ground over the last
+          stretch of the runway, so the next section arrives on a clean
+          surface instead of a hard cut. */}
+      <motion.div
+        style={{ opacity: exitOpacity }}
+        className="pointer-events-none absolute inset-0 bg-neutral"
+        aria-hidden
+      />
 
       {/* Scroll cue */}
       <motion.div
         style={{ opacity: frameOpacity }}
-        className="relative z-10 flex flex-col items-center gap-3 pb-[calc(9vh+1.25rem)]"
+        className="relative z-10 flex flex-col items-center gap-3 pb-[calc(9vh+1rem)]"
       >
-        <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-ink-muted/80">
+        <span className="font-mono text-xs uppercase tracking-[0.35em] text-muted">
           Scroll to begin
         </span>
         <span className="scroll-cue" aria-hidden />

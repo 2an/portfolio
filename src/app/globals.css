@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0c0d;
+  --background: #080b10;
   --foreground: #ece6da;
 }
 
@@ -112,31 +112,17 @@ body {
   100% { transform: translate(0, 0); }
 }
 
-/* Hero "dusk": a graded landscape built from gradients, slow Ken Burns drift */
+/* Hero ground (Night Signal): flat neutral with a faint STATIC technical
+    grid — no moving perspective floor, no Ken Burns drift */
 .hero-sky {
   position: absolute;
   inset: 0;
-  transform-origin: 50% 82%;
-  will-change: transform;
-  background:
-    radial-gradient(120% 55% at 50% 112%, rgba(69, 229, 222, 0.2), transparent 60%),
-    radial-gradient(90% 50% at 14% -12%, rgba(111, 156, 155, 0.2), transparent 60%),
-    radial-gradient(70% 40% at 88% -6%, rgba(224, 81, 143, 0.1), transparent 55%),
-    linear-gradient(to bottom, #0b1012 0%, #0a0c0d 45%, #101210 100%);
-  animation: kenburns 28s var(--ease-in-out) infinite alternate;
-}
-@keyframes kenburns {
-  from { transform: scale(1); }
-  to { transform: scale(1.07); }
-}
-
-/* Dark falloff behind the hero text block — keeps type readable over the
-    video while the frame edges stay clear */
-.hero-veil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(75% 65% at 50% 46%, rgba(5, 6, 7, 0.55), transparent 78%);
+  background-color: var(--background);
+  background-image:
+    linear-gradient(rgba(113, 135, 151, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(113, 135, 151, 0.05) 1px, transparent 1px),
+    radial-gradient(90% 55% at 85% 110%, rgba(69, 229, 222, 0.05), transparent 62%);
+  background-size: 48px 48px, 48px 48px, 100% 100%;
 }
 
 /* Dark falloff at the frame edges */
@@ -191,48 +177,6 @@ body {
 }
 
 /* ---------- Cyberpunk layer — tuned to whisper, never shout ---------- */
-
-/* Perspective grid, hero only: faint cyan, masked at the horizon */
-.grid-floor {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 40%;
-  perspective: 240px;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0.5;
-  -webkit-mask-image: linear-gradient(to top, black 40%, transparent 95%);
-  mask-image: linear-gradient(to top, black 40%, transparent 95%);
-}
-.grid-floor::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  inset-inline: 0;
-  height: 1px;
-  background: var(--color-accent);
-  box-shadow: 0 0 12px 1px rgba(69, 229, 222, 0.35);
-  opacity: 0.4;
-}
-.grid-floor-plane {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 250%;
-  height: 320%;
-  transform: translateX(-50%) rotateX(60deg);
-  transform-origin: top center;
-  background-image:
-    linear-gradient(to right, rgba(69, 229, 222, 0.12) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(69, 229, 222, 0.12) 1px, transparent 1px);
-  background-size: 48px 48px;
-  animation: grid-move 1.5s linear infinite;
-}
-@keyframes grid-move {
-  from { background-position: 0 0; }
-  to { background-position: 0 48px; }
-}
 
 /* CRT scanlines: a whisper, not a filter */
 .scanlines {
@@ -378,8 +322,6 @@ body {
     scroll-behavior: auto;
   }
   .film-grain,
-  .hero-sky,
-  .grid-floor-plane,
   .glitch.glitching,
   .glitch.glitching::before,
   .glitch.glitching::after,
