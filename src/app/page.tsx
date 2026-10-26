@@ -274,7 +274,7 @@ function Hero() {
             transition={{ duration: 1.2, delay: 0.15, ease: EASE_OUT }}
             className="font-mono text-xs font-medium uppercase tracking-[0.1em] text-accent"
           >
-            Full-Stack / Local AI
+            Software Architect / Full-Stack / Applied AI
           </motion.p>
           <div className="line-mask mt-5">
             <motion.h1
@@ -293,7 +293,7 @@ function Hero() {
               transition={{ duration: 1.1, delay: 0.45, ease: EASE_OUT }}
               className="max-w-[34ch] text-lg leading-relaxed text-ink sm:text-xl"
             >
-              Full-stack developer &amp; local-AI craftsman
+              Software architect &amp; full-stack engineer &mdash; applied AI
             </motion.p>
           </div>
           <motion.div
