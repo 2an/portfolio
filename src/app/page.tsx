@@ -259,8 +259,11 @@ function Hero() {
         ))}
       </motion.nav>
 
-      {/* 7/5 identity split: yellow name + CTAs | reel in one cropped frame */}
-      <div className="relative z-10 mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-1 items-center gap-8 px-6 py-8 sm:px-10 md:grid-cols-12 md:gap-10">
+      {/* 7/5 identity split: yellow name + CTAs | reel in one cropped frame.
+          xl:pl-32 keeps the identity column clear of the absolute section
+          rail (rail items reach ~108px from the viewport edge; at the
+          narrow end of the xl range the centered grid meets the edges). */}
+      <div className="relative z-10 mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-1 items-center gap-8 px-6 py-8 sm:px-10 md:grid-cols-12 md:gap-10 xl:pl-32">
         <motion.div
           style={{ y: titleY, opacity: titleOpacity }}
           className="flex flex-col items-start text-left md:col-span-7"
