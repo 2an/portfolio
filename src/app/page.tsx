@@ -109,13 +109,12 @@ const FILMOGRAPHY = [
   },
 ];
 
-const HERO_FPS = 24; // source frame rate of /assets/hero.mp4
-const HERO_TAIL_SECONDS = 2; // ping-pong tail length (fallback mode)
+const FRAME_COUNT = 145; // /assets/hero-frames/f001..f145.jpg — pre-extracted
+                         // from hero.mp4 (ffmpeg -i hero.mp4 -q:v 4 f%03d.jpg)
 
 function Hero() {
   const reduce = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasLive, setCanvasLive] = useState(false);
   const { scrollYProgress } = useScroll({
@@ -126,34 +125,28 @@ function Hero() {
   const opacity = useTransform(scrollYProgress, [0.5, 0.92], [1, 0]);
   const frameOpacity = useTransform(scrollYProgress, [0, 0.22], [1, 0]);
   const canvasScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
+  const canvasOpacity = useTransform(scrollYProgress, [0, 0.06], [0, 1]);
   const exitOpacity = useTransform(scrollYProgress, [0.72, 1], [0, 1]);
 
-  // Scroll-pinned reel. The video plays once as the intro; during that play
-  // we capture every frame (drawImage — zero seeks; the source has a single
-  // keyframe, so random seeks are unreliable). When the play ends, the
-  // canvas takes over and the scroll position scrubs the captured frames:
-  // scrolling the runway plays the film. If the capture comes up short, fall
-  // back to a real-time ping-pong of the tail frames.
+  // Scroll-pinned reel — no video playback at all. The source mp4 is a
+  // single-keyframe H.264 that cannot be seeked, so the film was flattened
+  // to a JPEG sequence at build time. On mount the frames decode into
+  // ImageBitmaps; the title screen stays static until the user scrolls,
+  // then the canvas scrubs the film.
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v || reduce) return;
+    if (reduce) return;
+    let alive = true;
     let raf = 0;
-    let rafDraw = 0;
-    let lastCapture = -1;
-    let mode: "capture" | "scrub" | "pong" = "capture";
-    let retries = 0;
-    let slots: (ImageBitmap | undefined)[] = [];
-    const scratch = document.createElement("canvas");
-    const sctx = scratch.getContext("2d");
+    const slots: (ImageBitmap | undefined)[] = new Array(FRAME_COUNT);
 
     const startScrub = () => {
-      mode = "scrub";
-      v.pause();
+      const first = slots[0];
+      if (!first) return;
       setCanvasLive(true);
       const c = canvasRef.current;
       if (!c) return;
-      c.width = v.videoWidth;
-      c.height = v.videoHeight;
+      c.width = first.width;
+      c.height = first.height;
       const ctx = c.getContext("2d");
       if (!ctx) return;
       // Smoothed scrub: lerp toward the raw scroll position every frame,
@@ -180,88 +173,27 @@ function Hero() {
             ctx.globalAlpha = 1;
           }
         }
-        rafDraw = requestAnimationFrame(loop);
+        raf = requestAnimationFrame(loop);
       };
-      rafDraw = requestAnimationFrame(loop);
+      raf = requestAnimationFrame(loop);
     };
 
-    const startPong = () => {
-      mode = "pong";
-      v.pause();
-      setCanvasLive(true);
-      const c = canvasRef.current;
-      if (!c) return;
-      c.width = v.videoWidth;
-      c.height = v.videoHeight;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      const tail = slots
-        .slice(-Math.round(HERO_TAIL_SECONDS * HERO_FPS))
-        .filter(Boolean) as ImageBitmap[];
-      if (!tail.length) return;
-      let i = tail.length - 1;
-      let dir = -1;
-      let last = performance.now();
-      const frameMs = 1000 / HERO_FPS;
-      const step = (now: number) => {
-        ctx.drawImage(tail[i], 0, 0);
-        if (now - last >= frameMs) {
-          last += frameMs;
-          i += dir;
-          if (i >= tail.length) {
-            i = tail.length - 1;
-            dir = -1;
-          } else if (i < 0) {
-            i = 0;
-            dir = 1;
-          }
-        }
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    };
+    let loaded = 0;
+    Array.from({ length: FRAME_COUNT }, (_, i) =>
+      fetch(`/assets/hero-frames/f${String(i + 1).padStart(3, "0")}.jpg`)
+        .then((r) => (r.ok ? r.blob() : Promise.reject(new Error("http"))))
+        .then((b) => createImageBitmap(b))
+        .then((b) => {
+          slots[i] = b;
+          loaded += 1;
+          if (alive && loaded === Math.ceil(FRAME_COUNT * 0.9)) startScrub();
+        })
+        .catch(() => {}),
+    );
 
-    const tick = () => {
-      if (mode !== "capture") return;
-      if (v.duration && !slots.length) {
-        slots = new Array(Math.max(1, Math.round(v.duration * HERO_FPS)));
-      }
-      if (sctx && v.playbackRate > 0 && v.currentTime > 0) {
-        // Capture window: the one-shot play crosses each frame once — grab
-        // every frame as it happens (the only reliable decode path here).
-        const idx = Math.min(
-          slots.length - 1,
-          Math.floor(v.currentTime * HERO_FPS),
-        );
-        while (lastCapture < idx) {
-          lastCapture += 1;
-          const n = lastCapture;
-          scratch.width = v.videoWidth;
-          scratch.height = v.videoHeight;
-          sctx.drawImage(v, 0, 0);
-          createImageBitmap(scratch)
-            .then((b) => (slots[n] = b))
-            .catch(() => {});
-        }
-      }
-      if (v.ended) {
-        const got = slots.filter(Boolean).length;
-        if (got >= slots.length * 0.85) {
-          startScrub();
-        } else if (got >= slots.length * 0.5 || retries >= 2) {
-          startPong();
-        } else {
-          retries += 1;
-          v.currentTime = 0;
-          void v.play().catch(() => {});
-        }
-      }
-      if (mode === "capture") raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
     return () => {
+      alive = false;
       cancelAnimationFrame(raf);
-      cancelAnimationFrame(rafDraw);
       slots.forEach((b) => b?.close());
     };
   }, [reduce, scrollYProgress]);
@@ -270,30 +202,17 @@ function Hero() {
     <div ref={wrapRef} id="top" className="relative h-[250vh]">
       <section className="sticky top-0 flex h-svh min-h-[640px] flex-col overflow-hidden">
         <div className="hero-sky" aria-hidden />
-        {/* Reel — the video plays once as the intro, then the canvas
-            (scroll-scrubbed frames) keeps the pinned viewport alive.
-            Gradient sky stays as the loading / reduced-motion fallback. */}
+        {/* Reel — pre-extracted frames, no video playback. Hidden at the
+            top of the runway (title screen); fades in on the first scroll
+            and scrubs with the pin. Gradient sky is the loading /
+            reduced-motion fallback. */}
         {!reduce && (
-          <>
-            <video
-              ref={videoRef}
-              className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-              src="/assets/hero.mp4"
-              autoPlay
-              muted
-              playsInline
-              preload="metadata"
-              aria-hidden
-            />
-            <motion.canvas
-              ref={canvasRef}
-              style={{ scale: canvasScale }}
-              className={`absolute inset-0 h-full w-full object-cover ${
-                canvasLive ? "opacity-100" : "opacity-0"
-              }`}
-              aria-hidden
-            />
-          </>
+          <motion.canvas
+            ref={canvasRef}
+            style={{ scale: canvasScale, opacity: canvasLive ? canvasOpacity : 0 }}
+            className="absolute inset-0 h-full w-full object-cover"
+            aria-hidden
+          />
         )}
       <div className="absolute inset-0 bg-black/10" aria-hidden />
       <div className="hero-veil" aria-hidden />
