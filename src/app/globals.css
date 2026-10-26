@@ -22,6 +22,12 @@
   --color-accent: #45e5de;
   --color-flare: #e0518f;
   --color-chrome: #fcee0a;
+  /* Night Signal design contract (public/assets/design) — surface system */
+  --color-neutral: #080b10;
+  --color-surface: #111820;
+  --color-raised: #1a2530;
+  --color-tertiary: #ff6b9d;
+  --color-line: #718797;
   --color-warm: #d9a05b;
   --color-cool: #6f9c9b;
   --color-hairline: rgba(236, 230, 218, 0.14);
@@ -304,6 +310,11 @@ body {
     for the HUD brackets) */
 .chamfer {
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+/* Night Signal: single 12px clipped corner for featured/selected plates */
+.chamfer-tr {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
 }
 
 /* HUD grid backdrop inside a stage: faint cyan lattice + horizon glow */

@@ -385,30 +385,91 @@ export default function Home() {
           id="work"
           number="03"
           eyebrow="Selected Work"
-          title="Filmography"
+          title="Selected Work"
           wide
+          titleClassName="font-cyber text-4xl font-semibold uppercase leading-tight tracking-[-0.025em] text-ink sm:text-5xl"
         >
           <div>
-            {FILMOGRAPHY.map((film, i) => (
-              <Reveal key={film.title} delay={(i % 3) * 0.06} className="group">
-                <article className="grid grid-cols-[4rem_1fr] gap-4 border-b border-hairline py-7 sm:grid-cols-[7rem_1fr] sm:gap-8">
-                  <span className="pt-2 font-mono text-xs text-ink-muted/60">
-                    {film.years}
-                  </span>
-                  <div>
-                    <h3 className="font-display text-2xl text-ink transition-colors duration-150 group-hovers:text-accent sm:text-3xl">
-                      {film.title}
-                    </h3>
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-muted">
-                      {film.blurb}
-                    </p>
-                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted/50">
-                      {film.tags.join("  ·  ")}
-                    </p>
+            {/* One small hazard tick per section — separator, not background */}
+            <div className="cp-hazard h-1 w-12" aria-hidden />
+
+            {/* Feature row — the flagship project, Night Signal plate */}
+            <Reveal className="mt-10">
+              <article className="chamfer-tr relative border border-hairline border-l-2 border-l-chrome bg-surface p-5 sm:p-7 lg:grid lg:grid-cols-[1fr_1.15fr] lg:gap-10">
+                {/* Placeholder plate — explicitly labeled, per the design
+                    contract (real screenshots arrive with the project data) */}
+                <div className="chamfer-tr relative aspect-video overflow-hidden border border-hairline bg-neutral">
+                  <div className="cp-hud-grid absolute inset-0" aria-hidden />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="border border-line/40 px-3 py-2 font-mono text-xs uppercase tracking-[0.15em] text-muted">
+                      Screenshot — placeholder
+                    </span>
                   </div>
-                </article>
-              </Reveal>
-            ))}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="bg-chrome px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[0.1em] text-neutral">
+                      Featured
+                    </span>
+                    <span className="font-mono text-xs text-muted">
+                      {FILMOGRAPHY[0].years}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 font-cyber text-3xl font-semibold tracking-[-0.025em] text-ink sm:text-4xl">
+                    {FILMOGRAPHY[0].title}
+                  </h3>
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+                    {FILMOGRAPHY[0].blurb}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {FILMOGRAPHY[0].tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="border border-line/30 px-2 py-1 font-mono text-xs text-muted"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+
+            {/* Structured rows for the remaining work */}
+            <div className="mt-12">
+              {FILMOGRAPHY.slice(1).map((film, i) => (
+                <Reveal key={film.title} delay={(i % 3) * 0.04}>
+                  <article className="group grid grid-cols-[3.5rem_1fr] gap-4 border-b border-hairline py-6 transition-colors duration-150 hover:bg-raised hover:shadow-[inset_2px_0_0_var(--color-accent)] sm:grid-cols-[6rem_1fr] sm:gap-8 sm:py-7">
+                    <div className="flex flex-col items-start gap-2 pt-1">
+                      <span className="font-mono text-xs font-medium text-chrome/80">
+                        {pad2(i + 2)}
+                      </span>
+                      <span className="font-mono text-xs text-muted/70">
+                        {film.years}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-cyber text-xl font-semibold tracking-[-0.02em] text-ink transition-colors duration-150 group-hover:text-chrome sm:text-2xl">
+                        {film.title}
+                      </h3>
+                      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                        {film.blurb}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {film.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="border border-line/30 px-2 py-1 font-mono text-xs text-muted"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </Scene>
 

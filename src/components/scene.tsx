@@ -20,6 +20,7 @@ export function Scene({
   title,
   children,
   wide = false,
+  titleClassName = "font-display text-5xl leading-tight text-ink sm:text-6xl",
 }: {
   id: string;
   number: string;
@@ -27,6 +28,7 @@ export function Scene({
   title: string;
   children: ReactNode;
   wide?: boolean;
+  titleClassName?: string;
 }) {
   const reduce = useReducedMotion();
   const ghostRef = useRef<HTMLSpanElement>(null);
@@ -62,7 +64,7 @@ export function Scene({
             whileInView={{ y: "0%" }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.9, ease: EASE_OUT }}
-            className="font-display text-5xl leading-tight text-ink sm:text-6xl"
+            className={titleClassName}
           >
             {title}
           </motion.h2>
