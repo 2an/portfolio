@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-/** Name that keeps a faint cyan/magenta fringe and throws a short
-    slice-glitch burst rarely (not constantly) — an easter-egg, not a
-    headline effect. */
+/** Name with a constant cyan/pink RGB split that throws a hard
+    multi-band "tear" burst every ~4–7 s — dramatic, but the real text
+    stays stable and readable between bursts (and untouched under
+    prefers-reduced-motion). */
 export function GlitchText({ text, className }: { text: string; className?: string }) {
   const reduce = useReducedMotion();
   const [on, setOn] = useState(false);
@@ -17,10 +18,10 @@ export function GlitchText({ text, className }: { text: string; className?: stri
     const burst = () => {
       if (!alive) return;
       setOn(true);
-      window.setTimeout(() => alive && setOn(false), 260);
-      timer = window.setTimeout(burst, 8000 + Math.random() * 8000);
+      window.setTimeout(() => alive && setOn(false), 420);
+      timer = window.setTimeout(burst, 3800 + Math.random() * 3200);
     };
-    const first = window.setTimeout(burst, 3000);
+    const first = window.setTimeout(burst, 2200);
     return () => {
       alive = false;
       window.clearTimeout(first);

@@ -192,13 +192,17 @@ body {
   );
 }
 
-/* Glitch: static micro-fringe at rest, rare hard slice burst while .glitching */
+/* Glitch — "tearing" cyberpunk treatment: a constant cyan/pink RGB split
+    at rest, and hard multi-band slice tears while .glitching. Colored ghost
+    layers sit BEHIND the real text (z-index -1/-2), so the readable name
+    stays intact while torn bands peel away from it. Amplitudes are em-based
+    so the same effect scales from the hero name down to panel titles. */
 .glitch {
   position: relative;
   display: inline-block;
   text-shadow:
-    0.015em 0 rgba(69, 229, 222, 0.22),
-    -0.015em 0 rgba(224, 81, 143, 0.22),
+    0.02em 0 rgba(69, 229, 222, 0.38),
+    -0.02em 0 rgba(255, 107, 157, 0.34),
     0 2px 30px rgba(0, 0, 0, 0.55);
 }
 .glitch::before,
@@ -214,38 +218,41 @@ body {
   z-index: -1;
 }
 .glitch::after {
-  color: var(--color-flare);
+  color: var(--color-tertiary);
   z-index: -2;
 }
 .glitch.glitching {
-  animation: glitch-shake 0.3s steps(2) infinite;
+  animation: glitch-shake 0.42s steps(4) infinite;
 }
 .glitch.glitching::before {
-  opacity: 0.7;
-  animation: glitch-slice-a 0.32s steps(3, jump-none) infinite;
+  opacity: 0.85;
+  animation: glitch-slice-a 0.42s steps(4, jump-none) infinite;
 }
 .glitch.glitching::after {
-  opacity: 0.7;
-  animation: glitch-slice-b 0.32s steps(3, jump-none) infinite;
+  opacity: 0.85;
+  animation: glitch-slice-b 0.42s steps(4, jump-none) infinite;
 }
 @keyframes glitch-shake {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(1px, -1px); }
-  50% { transform: translate(-1px, 1px); }
-  75% { transform: translate(1px, 1px); }
-  100% { transform: translate(-1px, -1px); }
+  0% { transform: translate(0, 0) skewX(0deg); }
+  20% { transform: translate(-2px, 0) skewX(-0.6deg); }
+  40% { transform: translate(2px, 1px) skewX(0.4deg); }
+  60% { transform: translate(-1px, -1px) skewX(0deg); }
+  80% { transform: translate(1px, 0) skewX(-0.3deg); }
+  100% { transform: translate(0, 0) skewX(0deg); }
 }
 @keyframes glitch-slice-a {
-  0% { clip-path: inset(15% 0 65% 0); transform: translate(-0.03em, -0.015em); }
-  33% { clip-path: inset(70% 0 8% 0); transform: translate(-0.02em, 0.01em); }
-  66% { clip-path: inset(8% 0 78% 0); transform: translate(-0.04em, 0); }
-  100% { clip-path: inset(45% 0 40% 0); transform: translate(-0.03em, 0.015em); }
+  0% { clip-path: inset(8% 0 74% 0); transform: translate(-0.09em, -0.02em); }
+  25% { clip-path: inset(52% 0 30% 0); transform: translate(-0.06em, 0.015em); }
+  50% { clip-path: inset(30% 0 55% 0); transform: translate(-0.1em, 0); }
+  75% { clip-path: inset(72% 0 12% 0); transform: translate(-0.05em, 0.02em); }
+  100% { clip-path: inset(18% 0 68% 0); transform: translate(-0.08em, -0.01em); }
 }
 @keyframes glitch-slice-b {
-  0% { clip-path: inset(60% 0 20% 0); transform: translate(0.03em, 0.015em); }
-  33% { clip-path: inset(10% 0 75% 0); transform: translate(0.02em, -0.01em); }
-  66% { clip-path: inset(50% 0 30% 0); transform: translate(0.04em, 0); }
-  100% { clip-path: inset(25% 0 55% 0); transform: translate(0.03em, -0.015em); }
+  0% { clip-path: inset(58% 0 22% 0); transform: translate(0.09em, 0.02em); }
+  25% { clip-path: inset(12% 0 78% 0); transform: translate(0.06em, -0.015em); }
+  50% { clip-path: inset(78% 0 4% 0); transform: translate(0.1em, 0); }
+  75% { clip-path: inset(38% 0 44% 0); transform: translate(0.05em, -0.02em); }
+  100% { clip-path: inset(64% 0 16% 0); transform: translate(0.08em, 0.01em); }
 }
 
 /* ---------- Cyberpunk 2077 voice (hobbies scene) ---------- */
