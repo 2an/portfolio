@@ -439,7 +439,7 @@ export default function Home() {
             <div className="mt-12">
               {FILMOGRAPHY.slice(1).map((film, i) => (
                 <Reveal key={film.title} delay={(i % 3) * 0.04}>
-                  <article className="group grid grid-cols-[3.5rem_1fr] gap-4 border-b border-hairline py-6 transition-colors duration-150 hover:bg-raised hover:shadow-[inset_2px_0_0_var(--color-accent)] sm:grid-cols-[6rem_1fr] sm:gap-8 sm:py-7">
+                  <article className="group grid grid-cols-[3.5rem_1fr] gap-4 border-b border-hairline py-6 pl-4 pr-2 transition-colors duration-150 hover:bg-raised hover:shadow-[inset_2px_0_0_var(--color-accent)] sm:grid-cols-[6rem_1fr] sm:gap-8 sm:pl-6 sm:pr-3 sm:py-7">
                     <div className="flex flex-col items-start gap-2 pt-1">
                       <span className="font-mono text-xs font-medium text-chrome/80">
                         {pad2(i + 2)}
