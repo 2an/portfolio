@@ -122,9 +122,11 @@ function Hero() {
     target: wrapRef,
     offset: ["start start", "end end"],
   });
-  const y = useTransform(scrollYProgress, [0, 0.4], [0, reduce ? 0 : -120]);
-  const opacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
-  const frameOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
+  const y = useTransform(scrollYProgress, [0.5, 1], [0, reduce ? 0 : -110]);
+  const opacity = useTransform(scrollYProgress, [0.5, 0.92], [1, 0]);
+  const frameOpacity = useTransform(scrollYProgress, [0, 0.22], [1, 0]);
+  const canvasScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
+  const exitOpacity = useTransform(scrollYProgress, [0.72, 1], [0, 1]);
 
   // Scroll-pinned reel. The video plays once as the intro; during that play
   // we capture every frame (drawImage — zero seeks; the source has a single
@@ -136,7 +138,7 @@ function Hero() {
     const v = videoRef.current;
     if (!v || reduce) return;
     let raf = 0;
-    let off: (() => void) | undefined;
+    let rafDraw = 0;
     let lastCapture = -1;
     let mode: "capture" | "scrub" | "pong" = "capture";
     let retries = 0;
@@ -154,20 +156,33 @@ function Hero() {
       c.height = v.videoHeight;
       const ctx = c.getContext("2d");
       if (!ctx) return;
-      let lastIdx = -1;
-      const draw = (p: number) => {
-        const idx = Math.max(
-          0,
-          Math.min(slots.length - 1, Math.round(p * (slots.length - 1))),
-        );
-        const b = slots[idx];
-        if (b && idx !== lastIdx) {
-          ctx.drawImage(b, 0, 0);
-          lastIdx = idx;
+      // Smoothed scrub: lerp toward the raw scroll position every frame,
+      // and blend between the two neighbouring frames so the reel moves in
+      // sub-frame steps instead of 24fps jumps.
+      let smoothed = scrollYProgress.get();
+      let lastKey = "";
+      const loop = () => {
+        const target = scrollYProgress.get();
+        smoothed += (target - smoothed) * 0.16;
+        if (Math.abs(target - smoothed) < 0.0004) smoothed = target;
+        const f = smoothed * (slots.length - 1);
+        const i = Math.max(0, Math.min(slots.length - 1, Math.floor(f)));
+        const frac = f - i;
+        const key = i + ":" + (frac < 0.04 ? 0 : Math.round(frac * 25));
+        const b0 = slots[i];
+        if (b0 && key !== lastKey) {
+          lastKey = key;
+          ctx.drawImage(b0, 0, 0);
+          const b1 = slots[i + 1];
+          if (frac > 0.04 && b1) {
+            ctx.globalAlpha = frac;
+            ctx.drawImage(b1, 0, 0);
+            ctx.globalAlpha = 1;
+          }
         }
+        rafDraw = requestAnimationFrame(loop);
       };
-      draw(scrollYProgress.get());
-      off = scrollYProgress.on("change", draw);
+      rafDraw = requestAnimationFrame(loop);
     };
 
     const startPong = () => {
@@ -246,7 +261,7 @@ function Hero() {
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      off?.();
+      cancelAnimationFrame(rafDraw);
       slots.forEach((b) => b?.close());
     };
   }, [reduce, scrollYProgress]);
@@ -270,8 +285,9 @@ function Hero() {
               preload="metadata"
               aria-hidden
             />
-            <canvas
+            <motion.canvas
               ref={canvasRef}
+              style={{ scale: canvasScale }}
               className={`absolute inset-0 h-full w-full object-cover ${
                 canvasLive ? "opacity-100" : "opacity-0"
               }`}
@@ -283,6 +299,14 @@ function Hero() {
       <div className="hero-veil" aria-hidden />
       <GridFloor />
       <div className="hero-vignette" aria-hidden />
+      {/* Dissolve: the pinned reel fades to the page background over the
+          last stretch of the runway, so the next section arrives on a
+          clean surface instead of a hard cut. */}
+      <motion.div
+        style={{ opacity: exitOpacity }}
+        className="pointer-events-none absolute inset-0 bg-[#050507]"
+        aria-hidden
+      />
 
       {/* Title-frame nav — fades out as the film starts */}
       <motion.nav
